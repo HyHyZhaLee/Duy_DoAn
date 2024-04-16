@@ -2,29 +2,38 @@
 #define BLYNK_TEMPLATE_NAME "ANHDUY"
 #define BLYNK_AUTH_TOKEN "iMZobFN-qOYNqajSEYSWvjKCk056WCpQ"
 
-#include <LiquidCrystal_I2C.h>
-#include <DHT.h>
-#include "wifi_setup.h"
+#define WIFI_SSID "Kiet Huy"
+#define WIFI_PASS "tumot_den9"
 
+#define WATER_HOUR 6
+#define WATER_MINUTE 32
+#define WATER_DURATION 5
 
-#include <BlynkSimpleEsp32.h>
-// Khởi tạo LCD (Thay đổi địa chỉ I2C của bạn nếu cần)
-LiquidCrystal_I2C lcd(0x27, 16, 2);
-Wifi_esp32 wifi("Kiet Huy", "tumot_den9");
-
-// Định nghĩa chân kết nối và loại cảm biến DHT11
 #define DHTPIN 12      // Chân IO12 kết nối cảm biến DHT11 với ESP32
 #define DHTTYPE DHT11 // Loại cảm biến DHT (DHT11 hoặc DHT22)
 #define SOIL_PIN 2
 #define RELAY_PIN 14
 
+#include <LiquidCrystal_I2C.h>
+#include <DHT.h>
+#include "wifi_setup.h"
+#include <TimeLib.h>
+#include <BlynkSimpleEsp32.h>
+#include <NTPClient.h>
+#include <WiFiUdp.h>
 
+WiFiUDP ntpUDP;
+NTPClient timeClient(ntpUDP, "pool.ntp.org", 25200);
+
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+Wifi_esp32 wifi(WIFI_SSID, WIFI_PASS);
 DHT dht(DHTPIN, DHTTYPE);
 
 float soilMoisturePercent;
 float humidityPercent;
 float temperature;
 int button;
+
 void setup() {
 
   Serial.begin(115200);
@@ -36,10 +45,10 @@ void setup() {
   wifi.setupWifi();
 
   Blynk.begin(BLYNK_AUTH_TOKEN, "Kiet Huy", "tumot_den9");
-  while (Blynk.connect() == false) {
-    // Wait until connected
-  }
+  timeClient.begin();
+
 }
+
 BLYNK_WRITE(V3) {
   button = param.asInt();
   if(button == 1) {
@@ -48,8 +57,20 @@ BLYNK_WRITE(V3) {
     digitalWrite(RELAY_PIN , LOW);
   }
 }
+bool water = 0;
 void loop() {
   Blynk.run(); // Cần phải gọi Blynk.run() thường xuyên để Blynk hoạt động chính xác
+  timeClient.update();
+  // Kiểm tra nếu là 4PM thì tưới cây trong 5 giây
+ if (timeClient.getHours() == WATER_HOUR && timeClient.getMinutes() == WATER_MINUTE) {
+    if(water == false){
+      digitalWrite(RELAY_PIN, HIGH); // Bật relay
+      delay(WATER_DURATION*1000); // Tưới cây 
+      digitalWrite(RELAY_PIN, LOW); // Tắt relay}
+    }
+    water = true;
+  }
+  else water = false;
   
   // Đọc dữ liệu từ cảm biến và hiển thị lên LCD
   updateSensors();
