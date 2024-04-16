@@ -4,10 +4,11 @@
 
 #include <LiquidCrystal_I2C.h>
 #include <DHT.h>
-#include "wifi_setup.h"
-
-
 #include <BlynkSimpleEsp32.h>
+#include "wifi_setup.h"
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+
 // Khởi tạo LCD (Thay đổi địa chỉ I2C của bạn nếu cần)
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 Wifi_esp32 wifi("Kiet Huy", "tumot_den9");
@@ -25,20 +26,25 @@ float soilMoisturePercent;
 float humidityPercent;
 float temperature;
 int button;
-void setup() {
 
+// Function prototypes for tasks
+void readSensorTask(void *pvParameters);
+void updateBlynkTask(void *pvParameters);
+
+void setup() {
   Serial.begin(115200);
   dht.begin();
-  pinMode(SOIL_PIN, INPUT); // Khai báo chân cảm biến đất là INPUT
-  pinMode(RELAY_PIN, OUTPUT); // Khai báo chân relay là OUTPUT
-  digitalWrite(RELAY_PIN, LOW); // Khởi đầu, chúng ta sẽ tắt relay
+  pinMode(SOIL_PIN, INPUT);
+  pinMode(RELAY_PIN, OUTPUT);
+  digitalWrite(RELAY_PIN, LOW);
   setupLCD();
-  wifi.setupWifi();
-
+  WiFi.begin("Kiet Huy", "tumot_den9");
   Blynk.begin(BLYNK_AUTH_TOKEN, "Kiet Huy", "tumot_den9");
-  while (Blynk.connect() == false) {
-    // Wait until connected
-  }
+
+  // Create the tasks
+  xTaskCreatePinnedToCore(readSensorTask, "readSensorTask", 10000, NULL, 1, NULL, 0);         // TASK1
+  xTaskCreatePinnedToCore(updateBlynkTask, "updateBlynkTask", 10000, NULL, 1, NULL, 0);       // TASK2
+
 }
 BLYNK_WRITE(V3) {
   button = param.asInt();
@@ -48,42 +54,47 @@ BLYNK_WRITE(V3) {
     digitalWrite(RELAY_PIN , LOW);
   }
 }
+
 void loop() {
-  Blynk.run(); // Cần phải gọi Blynk.run() thường xuyên để Blynk hoạt động chính xác
-  
-  // Đọc dữ liệu từ cảm biến và hiển thị lên LCD
-  updateSensors();
-  // Gửi dữ liệu lên Blynk
-  sendDatatoBlynk();
+  // In FreeRTOS, you typically do not use the loop() function for tasks.
+  // Instead, you create tasks that the scheduler runs.
+  Blynk.run();
 }
 
-void updateSensors(){
-  // Đọc độ ẩm từ cảm biến đất
-  int soilMoistureValue = analogRead(SOIL_PIN);
-  soilMoisturePercent = map(soilMoistureValue, 0, 4095, 0, 100); // Gán giá trị từ 0-4095 thành phần trăm
-  // Đọc độ ẩm và nhiệt độ từ DHT11
-  humidityPercent = dht.readHumidity();
-  temperature = dht.readTemperature();
-  
-  lcd.setCursor(2,0);
-  lcd.print(humidityPercent);
-  lcd.setCursor(9,0);
-  lcd.print(temperature);
-  lcd.setCursor(9,1);
-  lcd.print(soilMoisturePercent);
-
-  delay(2000); // Chờ 2 giây trước khi đọc tiếp
-}
-
-void sendDatatoBlynk(){
-  // Cập nhật dữ liệu lên Blynk
-  Blynk.virtualWrite(V0, temperature);
-  Blynk.virtualWrite(V1, humidityPercent);
-  Blynk.virtualWrite(V2, soilMoisturePercent);
-  // Bạn có thể cập nhật trạng thái relay bằng cách sử dụng virtualWrite cho V3 tương tự như trên
+void readSensorTask(void *pvParameters) {
+  (void) pvParameters;
+  for (;;) {
+    // Place your sensor reading logic here
+    // Đọc độ ẩm từ cảm biến đất
+    int soilMoistureValue = analogRead(SOIL_PIN);
+    soilMoisturePercent = map(soilMoistureValue, 0, 4095, 0, 100); // Gán giá trị từ 0-4095 thành phần trăm
+    // Đọc độ ẩm và nhiệt độ từ DHT11
+    humidityPercent = dht.readHumidity();
+    temperature = dht.readTemperature();
+    
+    lcd.setCursor(2,0);
+    lcd.print(humidityPercent);
+    lcd.setCursor(9,0);
+    lcd.print(temperature);
+    lcd.setCursor(9,1);
+    lcd.print(soilMoisturePercent);
+    // Replace delay with vTaskDelay
+    vTaskDelay(pdMS_TO_TICKS(2000)); 
+  }
 }
 
 
+void updateBlynkTask(void *pvParameters) {
+  (void) pvParameters;
+  for (;;) {
+    Blynk.virtualWrite(V0, temperature);
+    Blynk.virtualWrite(V1, humidityPercent);
+    Blynk.virtualWrite(V2, soilMoisturePercent);
+    // Place your Blynk updating logic here
+    // Replace delay with vTaskDelay
+    vTaskDelay(pdMS_TO_TICKS(5000));
+  }
+}
 
 void setupLCD(){
   byte degree[8] = {
