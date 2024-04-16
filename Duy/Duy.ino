@@ -55,6 +55,7 @@ void loop() {
   updateSensors();
   // Gửi dữ liệu lên Blynk
   sendDatatoBlynk();
+  delay(1000);
 }
 
 void updateSensors(){
@@ -71,8 +72,6 @@ void updateSensors(){
   lcd.print(temperature);
   lcd.setCursor(9,1);
   lcd.print(soilMoisturePercent);
-
-  delay(2000); // Chờ 2 giây trước khi đọc tiếp
 }
 
 void sendDatatoBlynk(){
