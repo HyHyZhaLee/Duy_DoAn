@@ -33,6 +33,7 @@ float soilMoisturePercent;
 float humidityPercent;
 float temperature;
 int button;
+bool water = 0;
 
 void setup() {
 
@@ -57,7 +58,7 @@ BLYNK_WRITE(V3) {
     digitalWrite(RELAY_PIN , LOW);
   }
 }
-bool water = 0;
+
 void loop() {
   Blynk.run(); // Cần phải gọi Blynk.run() thường xuyên để Blynk hoạt động chính xác
   timeClient.update();
