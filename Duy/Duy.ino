@@ -1,8 +1,10 @@
 #include <LiquidCrystal_I2C.h>
 #include <DHT.h>
+#include "wifi_setup.h"
 
 // Khởi tạo LCD (Thay đổi địa chỉ I2C của bạn nếu cần)
 LiquidCrystal_I2C lcd(0x27, 16, 2);
+Wifi_esp32 wifi("Kiet Huy", "tumot_den9");
 
 // Định nghĩa chân kết nối và loại cảm biến DHT11
 #define DHTPIN 12      // Chân IO12 kết nối cảm biến DHT11 với ESP32
@@ -21,10 +23,10 @@ void setup() {
   dht.begin();
   pinMode(SOIL_PIN, INPUT); // Khai báo chân cảm biến đất là INPUT
   setupLCD();
+  wifi.setupWifi();
 }
 
 void loop() {
-  
   // Đọc độ ẩm từ cảm biến đất
   int soilMoistureValue = analogRead(SOIL_PIN);
   soilMoisturePercent = map(soilMoistureValue, 0, 4095, 0, 100); // Gán giá trị từ 0-4095 thành phần trăm
