@@ -24,7 +24,7 @@ DHT dht(DHTPIN, DHTTYPE);
 float soilMoisturePercent;
 float humidityPercent;
 float temperature;
-
+int button;
 void setup() {
 
   Serial.begin(115200);
@@ -40,7 +40,14 @@ void setup() {
     // Wait until connected
   }
 }
-
+BLYNK_WRITE(V3) {
+  button = param.asInt();
+  if(button == 1) {
+    digitalWrite(RELAY_PIN , HIGH);
+  } else {
+    digitalWrite(RELAY_PIN , LOW);
+  }
+}
 void loop() {
   Blynk.run(); // Cần phải gọi Blynk.run() thường xuyên để Blynk hoạt động chính xác
   
