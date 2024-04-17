@@ -1,14 +1,14 @@
 #define BLYNK_TEMPLATE_ID "TMPL6ldAqaCJv"
 #define BLYNK_TEMPLATE_NAME "ANHDUY"
 #define BLYNK_AUTH_TOKEN "iMZobFN-qOYNqajSEYSWvjKCk056WCpQ"
-
+//Sửa chỗ này
 #define WIFI_SSID "Kiet Huy"
 #define WIFI_PASS "tumot_den9"
 
-#define WATER_HOUR 6
-#define WATER_MINUTE 32
+#define WATER_HOUR 17
+#define WATER_MINUTE 00
 #define WATER_DURATION 5
-
+//Tới chỗ này
 #define DHTPIN 12      // Chân IO12 kết nối cảm biến DHT11 với ESP32
 #define DHTTYPE DHT11 // Loại cảm biến DHT (DHT11 hoặc DHT22)
 #define SOIL_PIN 2
@@ -56,6 +56,7 @@ BLYNK_WRITE(V3) {
     digitalWrite(RELAY_PIN , HIGH);
   } else {
     digitalWrite(RELAY_PIN , LOW);
+    setupLCD();
   }
 }
 
@@ -68,6 +69,7 @@ void loop() {
       digitalWrite(RELAY_PIN, HIGH); // Bật relay
       delay(WATER_DURATION*1000); // Tưới cây 
       digitalWrite(RELAY_PIN, LOW); // Tắt relay}
+      setupLCD();
     }
     water = true;
   }
